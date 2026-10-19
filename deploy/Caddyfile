@@ -1,0 +1,7 @@
+# SITE_ADDRESS decides the mode:
+#   ":80"                       plain HTTP on the droplet IP (default, no domain needed)
+#   "203-0-113-10.sslip.io"     automatic HTTPS for a free hostname that points at that IP
+{$SITE_ADDRESS::80} {
+	encode gzip
+	reverse_proxy api:8080
+}

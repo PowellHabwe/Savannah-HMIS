@@ -1,0 +1,11 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  bin = "./tmp/main.exe"
+  cmd = "go build -o ./tmp/main.exe ./cmd/api"
+  delay = 1000
+  exclude_dir = ["tmp", "vendor", "db/sqlc"]
+  exclude_regex = ["_test.go"]
+  include_ext = ["go"]
+  log = "build-errors.log"

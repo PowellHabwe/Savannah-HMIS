@@ -1,0 +1,62 @@
+name: Deploy
+
+# Merging a pull request into main triggers this workflow (a merge is a push to main).
+on:
+  push:
+    branches: [main]
+
+# Never run two deployments at once; let the running one finish.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Same checks as on a pull request. If they fail, nothing is deployed.
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      HOST: ${{ secrets.DROPLET_HOST }}
+      DEPLOY_USER: ${{ secrets.DROPLET_USER }}
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+      # On the droplet: fetch exactly this commit from the (public) repo, then
+      # rebuild and restart with Docker Compose. The one-shot `migrate` service
+      # applies pending migrations before the API starts.
+      - name: Deploy
+        run: |
+          ssh "$DEPLOY_USER@$HOST" "SHA=$GITHUB_SHA REPO=$GITHUB_REPOSITORY bash -s" <<'EOF'
+          set -euo pipefail
+          cd /opt/savannah-hmis
+          [ -d .git ] || { git init -q; git remote add origin "https://github.com/$REPO.git"; }
+          git fetch --depth 1 origin "$SHA"
+          git checkout -f -B deploy FETCH_HEAD
+          docker compose --env-file .env -f deploy/docker-compose.prod.yml up -d --build --remove-orphans
+          docker image prune -f
+          EOF
+
+      # Fails the workflow if the app is not answering after the deploy.
+      - name: Smoke test
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "$APP_URL/health"; then exit 0; fi
+            sleep 5
+          done
+          echo "health check failed after deploy" >&2
+          exit 1

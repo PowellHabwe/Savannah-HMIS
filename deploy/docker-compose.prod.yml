@@ -1,0 +1,81 @@
+# Production stack. On the droplet the repo is checked out at /opt/savannah-hmis and this
+# file is run from there (see deploy/SETUP.md). Only Caddy publishes ports; Postgres and
+# the API are reachable only on the internal compose network.
+#
+# Variables come from the .env file passed with --env-file (DB_USER, DB_PASSWORD, DB_NAME,
+# SITE_ADDRESS, and optionally CLINIC_TIMEZONE / MIN_LEAD_MINUTES).
+name: savannah-hmis-prod
+
+# Shared by the api and migrate services: same image, same environment.
+x-app: &app
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  image: savannah-hmis:latest
+  environment:
+    ENVIRONMENT: production
+    SERVER_HOST: 0.0.0.0
+    SERVER_PORT: "8080"
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DB_USER: ${DB_USER}
+    DB_PASSWORD: ${DB_PASSWORD}
+    DB_NAME: ${DB_NAME}
+    CLINIC_TIMEZONE: ${CLINIC_TIMEZONE:-Africa/Nairobi}
+    MIN_LEAD_MINUTES: ${MIN_LEAD_MINUTES:-60}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: applies pending goose migrations, then exits. The API will not
+  # start until it has finished successfully.
+  migrate:
+    <<: *app
+    entrypoint: ["./migrate"]
+    command: ["-dir", "db/migrations", "up"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
