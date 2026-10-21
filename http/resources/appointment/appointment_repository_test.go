@@ -1,16 +1,5 @@
 package appointment
 
-// Integration tests: they run against a real Postgres because the guarantee
-// we care most about (no double booking) is enforced by the database.
-//
-// Set TEST_DATABASE_URL to run them; otherwise they are skipped, so a plain
-// `go test ./...` still works on a machine without a database.
-//
-//   $env:TEST_DATABASE_URL="postgres://clinic:clinicpass@localhost:5436/clinic?sslmode=disable"
-//
-// Each test creates its own doctor and patients with random IDs and deletes
-// them afterwards, so it never touches the seed data.
-
 import (
 	"context"
 	"errors"

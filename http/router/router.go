@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"time"
+	"errors"
 
 	httpconfig "github.com/PowellHabwe/Savannah-HMIS/http"
 	"github.com/PowellHabwe/Savannah-HMIS/http/resources/appointment"
@@ -24,9 +25,10 @@ func New(app *fiber.App, params *httpconfig.ControllerParams) {
 	app.Get("/health", requestlog.NewHandler(func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
 		defer cancel()
-		if err := params.Pool.Ping(ctx); err != nil {
-			return response.HttpError(fiber.StatusServiceUnavailable, c, err)
-		}
+	if err := params.Pool.Ping(ctx); err != nil {
+		params.Logger.Error().Err(err).Msg("health check failed")
+		return response.HttpError(fiber.StatusServiceUnavailable, c, errors.New("database unavailable"))
+	}
 		return response.ReturnData(c, fiber.Map{"status": "ok"})
 	}, params.Logger))
 

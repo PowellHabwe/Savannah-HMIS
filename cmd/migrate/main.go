@@ -13,7 +13,6 @@ import (
 )
 
 const dialect = "pgx"
-
 var dir = flag.String("dir", "db/migrations", "directory with migration files")
 
 func main() {

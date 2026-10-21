@@ -42,7 +42,15 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := pgxpool.New(ctx, c.DB.DSN())
+	poolCfg, err := pgxpool.ParseConfig(c.DB.DSN())
+	if err != nil {
+		l.Fatal().Err(err).Msg("invalid database config")
+	}
+	poolCfg.MaxConns = 10
+	poolCfg.MinConns = 2
+	poolCfg.MaxConnLifetime = time.Hour
+	poolCfg.MaxConnIdleTime = 30 * time.Minute
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		l.Fatal().Err(err).Msg("unable to create database pool")
 	}
