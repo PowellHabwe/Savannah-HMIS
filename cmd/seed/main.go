@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Weekdays follow Go's time.Weekday: 0 = Sunday ... 6 = Saturday.
 type window struct {
 	Weekdays []int
 	Start    string
@@ -30,7 +29,6 @@ type patientSeed struct {
 	Email    string
 }
 
-// Fixed IDs make the seed idempotent and make the API easy to try by hand.
 var doctors = []doctorSeed{
 	{"d0000000-0000-4000-8000-000000000001", "Dr. Amina Wanjiku", "General Practice",
 		[]window{{[]int{1, 2, 3, 4, 5}, "09:00", "17:00"}}},
