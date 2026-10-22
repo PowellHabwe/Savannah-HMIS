@@ -250,7 +250,7 @@ You can point it at the live API or your own local one. The demo data is already
 | Patient Grace Njeri | `a0000000-0000-4000-8000-000000000001` |
 | Patient Peter Mwangi | `a0000000-0000-4000-8000-000000000002` |
 
-`GET /api/v1/doctors` lists all five doctors with their IDs. A booking must be on a future working day, so set one date in Postman (`slotDate`) to an upcoming Monday.
+`GET /api/v1/doctors` lists all five doctors with their IDs. A booking must be on a future working day, so set one date in Postman (`slotDate`) to a future weekday of your choice.
 
 Eight checks cover the whole brief:
 
@@ -284,13 +284,13 @@ An environment is a list of named values. When you write `{{baseUrl}}` inside a 
    | `doctorId` | `d0000000-0000-4000-8000-000000000001` |
    | `patientId` | `a0000000-0000-4000-8000-000000000001` |
    | `patientId2` | `a0000000-0000-4000-8000-000000000002` |
-   | `slotDate` | an upcoming Monday, for example `2026-11-02` |
+   | `slotDate` | any future weekday (Monday to Friday), for example `2026-12-14`. Pick your own date so you don't clash with someone else's test |
    | `appointmentId` | leave empty for now (you paste the booking's ID here after request 3) |
 
 3. Press `Ctrl+S` to save.
 4. At the top right there is a dropdown that says **No environment**. Click it and choose `Savannah`. Do this or none of the `{{...}}` shortcuts will work.
 
-The IDs belong to the demo data: `doctorId` is Dr. Amina Wanjiku, `patientId` is Grace, `patientId2` is Peter. `slotDate` must be a future Monday, because Dr. Amina works Monday to Friday and a booking can't be in the past. When that date goes by, change this one value to a later Monday.
+The IDs belong to the demo data: `doctorId` is Dr. Amina Wanjiku, `patientId` is Grace, `patientId2` is Peter. `slotDate` must be a future weekday, because Dr. Amina works Monday to Friday and a booking can't be in the past. If the date has passed, or someone has already booked that slot, change this one value to another weekday.
 
 ##### Step 3. Create a collection
 
@@ -374,7 +374,7 @@ Send them in this order. The reply for each is shown, so you can compare it with
 
 **Save the booking's ID.** Requests 5 to 7 work on this booking, so they need its `id`. Copy the `id` value from the reply . Then open your `Savannah` environment, paste it into the `appointmentId` row, and press `Ctrl+S`. Requests 5 to 7 already point at `{{appointmentId}}`, so you don't have to edit them.
 
-If you send request 3 a second time, you will get a `409` because 09:00 is now taken. That is the API doing its job. To start over, change `slotDate` to a later Monday.
+If you send request 3 a second time, you will get a `409` because 09:00 is now taken. That is the API doing its job. To start over, change `slotDate` to another weekday.
 
 ###### Request 4: Try to book the same slot as Peter
 
@@ -488,8 +488,8 @@ For one more error, send request 3 with an empty body `{}`. You get **422** and 
 ##### If a request doesn't behave
 
 - **"Could not get response" or it just hangs:** the address is wrong, or the server isn't reachable. Check `baseUrl`, and that the environment is selected (Step 2, point 4).
-- **A booking returns `422` about the past or "too soon":** your `slotDate` has gone by. Change it to a later Monday.
-- **Request 3 returns `409`:** that slot is already booked from an earlier run. Change `slotDate` to a later Monday, or use a different time.
+- **A booking returns `422` about the past or "too soon":** your `slotDate` has gone by. Change it to another future weekday.
+- **Request 3 returns `409`:** someone has already booked that slot, perhaps in an earlier test. Change `slotDate` to another weekday and send it again.
 - **Requests 5 to 7 return `400` or `404`:** `appointmentId` is empty or has the wrong ID. Paste the `id` from request 3's reply into the environment again and save.
 
 #### Just want to look? Use a browser
